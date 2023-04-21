@@ -1,3 +1,7 @@
+/*
+    Interfaces example
+*/
+
 // Dependencies //////////////////////////////////////////////////////////////
 #include <stdlib.h>
 #include <stdio.h>
@@ -14,130 +18,144 @@
 #include <unordered_map>
 #include <utility>
 
-// Macro Definitions /////////////////////////////////////////////////////////
-#define INPUT_PREFIX "input"
+#include "inheritance.h"
 
-// Enumerations //////////////////////////////////////////////////////////////
-// Typedefs //////////////////////////////////////////////////////////////////
 // Forward References ////////////////////////////////////////////////////////
-class SOME_DB;
-class SOME_SETTINGS;
+class FACTORY_INTF;
 class BLAH;
-class Base;
-class Derived;
 
-/*
-    Abstract Classes: have at least 1 pure virtual function, we can't create
-        an object of that class
-    Pure Virtual Function:      virtual <type> fn_name(<type> arg1, ...) = 0;
-        Only implement function in derived class (overriding) 
-        - if we don't, the derived class will also be abstract
-        - can only change <type> to a COVARIANT type
-        - can't change <type> of args
-    Covariant return types: 
-        - ptr/ref to class, must be same class or derived
-    Interface: all methods are pure virtual
-*/
-
-// Interfaces ///////////////////////////////////////////////////////////////
-class SOME_CLASS_INTF
+// Interfaces ////////////////////////////////////////////////////////////////
+class TOP_LEVEL_CLASS_INTF
+// Top level class has client facing functions
 {
 public:
     
-    SOME_CLASS_INTF() = default;
-    SOME_CLASS_INTF(const SOME_CLASS_INTF&) = delete;
-    SOME_CLASS_INTF& operator=(const SOME_CLASS_INTF&) = delete;
-    virtual ~SOME_CLASS_INTF() = default;
+    TOP_LEVEL_CLASS_INTF() = default;
+    TOP_LEVEL_CLASS_INTF(const TOP_LEVEL_CLASS_INTF&) = delete;
+    TOP_LEVEL_CLASS_INTF& operator=(const TOP_LEVEL_CLASS_INTF&) = delete;
+    virtual ~TOP_LEVEL_CLASS_INTF() = default;
 
-    virtual int some_function(const SOME_DB &db, SOME_SETTINGS &settings) = 0;
+    virtual int some_function(const SOME_DB &db, FACTORY_INTF &factory) = 0;
     virtual bool another_fn() = 0;
-    virtual Base* return_type_example() = 0;
 
 protected:
     //
 private:
-    // an example function
-    virtual Base* get_blah(SOME_SETTINGS &settings){
-        static Base dummy_info;
-        return &dummy_info;
-    }
+    //
 };
 
-/*Design decisions
-    Separate interfaces for: top level, storing data (factory), data itself
-*/
-
-/*
-    Fake: implementation with same functionality but not for production
-    Mock: set expectations which form a specification of calls expected
-    Stub: predefined answers to method calls 
-*/
-
-// Inheritance /////////////////////////////////////////////////////////////////
-
-class SOME_CLASS_STUB: public SOME_CLASS_INTF
-/*
-    Derived class from SOME_CLASS_INTF, public derivation 
-    If public derivation:
-        public members of Base -> public members of Derived
-        protected members of Base -> protected members of Derived
-    If protected derivation:
-        public & protected of Base -> protected of Derived
-    If private derivation: 
-        public & protected of Base -> private of Derived
-*/
+class FACTORY_INTF
+// Factory class stores data, accesses data, modifies data
 {
 public:
-    // We can add additional inputs to constructor of derived class
-    SOME_CLASS_STUB(const SOME_DB& db_input, SOME_SETTINGS& settings_input):
-        m_db(db_input), m_settings(settings_input) {}
+    
+    FACTORY_INTF() = default;
+    FACTORY_INTF(const FACTORY_INTF&) = delete;
+    FACTORY_INTF& operator=(const FACTORY_INTF&) = delete;
+    virtual ~FACTORY_INTF() = default;
 
-    SOME_CLASS_STUB(const SOME_CLASS_STUB&) = delete;
-    SOME_CLASS_STUB& operator=(const SOME_CLASS_STUB&) = delete;
-    virtual ~SOME_CLASS_STUB() = default;
+    virtual DATA_INTF* get_data_info(std::string &key) = 0;
+protected:
+    //
+private:
+    //
+    std::unordered_map<std::string, DATA_INTF*> m_data_map;
+};
 
-    // All pure virtual classes get implemented in derived class
-    int some_function(const SOME_DB &db, SOME_SETTINGS &settings);
+class DATA_INTF
+// The actual data itself - data members = data we want to store
+{
+public:
+    
+    DATA_INTF() = default;
+    DATA_INTF(const DATA_INTF&) = delete;
+    DATA_INTF& operator=(const DATA_INTF&) = delete;
+    virtual ~DATA_INTF() = default;
+
+    virtual void set_blah(const BLAH &eh) = 0;
+    virtual const BLAH& get_blah() = 0;
+    virtual void set_some_bool() = 0;
+    virtual bool get_the_bool() = 0;
+
+protected:
+    //
+private:
+    // Data members
+};
+
+// Example using interfaces //////////////////////////////////////////////////
+class TOP_LEVEL_CLASS_EXAMPLE : public TOP_LEVEL_CLASS_INTF
+{
+public:
+    // Can have additional inputs to derived class
+    TOP_LEVEL_CLASS_EXAMPLE(FACTORY_INTF& factory_in):
+        m_factory(factory_in) {}
+
+    TOP_LEVEL_CLASS_EXAMPLE(const TOP_LEVEL_CLASS_EXAMPLE&) = delete;
+    TOP_LEVEL_CLASS_EXAMPLE& operator=(const TOP_LEVEL_CLASS_EXAMPLE&) = delete;
+    virtual ~TOP_LEVEL_CLASS_EXAMPLE() = default;
+
+    // functions called by users, some_function can modify factory
+    int some_function(const SOME_DB &db, FACTORY_INTF &factory);
     bool another_fn();
-    Derived* return_type_example();
-
-    // Derived classes can have additional functions
-    std::vector<int> a_new_function_for_this_class();
 
 protected:
     //
 private:
-    // And additonal data members 
-    const SOME_DB& m_db;
-    SOME_SETTINGS& m_settings;
-    BLAH *m_blah;
+    // Top level class hosts the factory storing data
+    FACTORY_INTF &m_factory;
 };
 
-// in .cpp file: ///////////////////////////////////
-int SOME_CLASS_STUB::some_function(const SOME_DB &db, SOME_SETTINGS &settings){return 0;}
-bool SOME_CLASS_STUB::another_fn(){ return true;}
-std::vector<int> SOME_CLASS_STUB::a_new_function_for_this_class(){}
-Derived* SOME_CLASS_STUB::return_type_example(){}
-
-// More about derived classes //////////////////////////////////////////////
-class Base {
-public:
-    int a;
-};
-
-class Derived : public Base {
-public:
-    int b;
-    // object of derived class has both a and b
-};
-
-int main()
+class FACTORY_EXAMPLE : public FACTORY_INTF
 {
-    // Can pass in derived as base
-    Base *ptr = new Derived();
-    delete ptr;
+public:
+    
+    FACTORY_EXAMPLE() = default;
+    FACTORY_EXAMPLE(const FACTORY_EXAMPLE&) = delete;
+    FACTORY_EXAMPLE& operator=(const FACTORY_EXAMPLE&) = delete;
+    virtual ~FACTORY_EXAMPLE() = default;
 
-    // Example
-    Derived example;
-    example.a = 3;
+    // Functions for map (insert data, getting data, etc.)
+    DATA_INTF* get_data_info(std::string &key);
+    void insert_data_to_map(std::string key, DATA_INTF* val);
+    std::vector<std::string> check_mapping();
+
+protected:
+    //
+private:
+    // The factory stores the data mapping (from name to data)
+    std::unordered_map<std::string, DATA_INTF*> m_data_map;
+};
+
+class DATA_EXAMPLE : public DATA_INTF
+// The actual data itself - data members = data we want to store
+{
+public:
+    
+    DATA_EXAMPLE() = default;
+    DATA_EXAMPLE(const DATA_EXAMPLE&) = delete;
+    DATA_EXAMPLE& operator=(const DATA_EXAMPLE&) = delete;
+    virtual ~DATA_EXAMPLE() = default;
+
+    void set_blah(const BLAH &eh);
+    const BLAH& get_blah();
+    void set_some_bool();
+    bool get_the_bool();
+
+protected:
+    //
+private:
+    // Data members
+    BLAH m_eh;
+    bool eh_exists = false;
+};
+
+// Example usage /////////////////////////////////////////////////////////////
+void main(){
+    FACTORY_EXAMPLE factory;
+    SOME_DB* m_db;
+
+    TOP_LEVEL_CLASS_EXAMPLE top_level = TOP_LEVEL_CLASS_EXAMPLE(factory);
+    int out = top_level.some_function(m_db, factory);
+
 }

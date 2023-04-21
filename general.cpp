@@ -14,7 +14,7 @@
 #include <unordered_map>
 #include <utility>
 
-#include "interfaces.h"
+#include "inheritance.h"
 
 // Macro Definitions /////////////////////////////////////////////////////////
 // Enumerations //////////////////////////////////////////////////////////////
@@ -154,9 +154,16 @@ void vector_example(){
         std::cout << "Do something";
     }
 
+    // Avoiding the last comma
     // Print vector to cout (can change cout to ostream)
     std::copy(m_str_vec.begin(), m_str_vec.end()-1, std::ostream_iterator<std::string>(std::cout, ", "));
     std::cout << m_str_vec.back();
+    // or
+    char const *pre = "";
+    for (auto elem : m_str_vec){
+        std::cout << pre << elem;
+        pre=", ";
+    }
 
 }
 
@@ -195,4 +202,45 @@ void maps_examples(CLASS_NAME key, Base &val){
         // x.first is key
         // x.second is val
     }
+}
+
+// 9 File systems //////////////////////////////////////////////////////////
+void file_fun(std::ostream &f){
+    f << "Outputting this to file f\n";
+
+    // Reading from file
+    std::ifstream in_file;
+    std::ofstream out_file;
+    std::string str;
+
+    in_file.open("in.txt");
+    if (in_file.fail()){
+        f << "Can't open blah.txt\n";
+    } else {
+        while (!in_file.eof()){
+            // getting each line of blah.txt
+            getline(in_file, str);
+            f << str << ", ";
+        }
+        in_file.close();
+    }
+
+    // Writing from file
+    out_file.open("out.txt");
+    if (out_file.fail()){
+        f << "can't open out.txt\n";
+    } else {
+        out_file << "writing this to out.txt\n";
+        out_file.close();
+    }
+}
+
+int main(){
+    //Calling file_fun - ostream
+    std::ofstream f("blah.txt", std::ios::out);
+    if (!f.rdbuf()->is_open()){
+        //can't open file
+        return 0;
+    }
+    file_fun(f);
 }
